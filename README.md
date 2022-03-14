@@ -1,2 +1,2 @@
-# numista_py
-A Python SDK for the Numista API
+# numista-api-sdk
+A multi-language SDK for the Numista API
