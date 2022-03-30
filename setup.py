@@ -11,7 +11,7 @@ setuptools.setup(
     description="A Python based SDK for the numista.com api",  # pylint: disable=E501; # noqa: E501
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/namachieli/numista-api-sdk/numista_py",
+    url="https://github.com/namachieli/numista-api-sdk",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3.8.10",
@@ -22,6 +22,9 @@ setuptools.setup(
     python_requires='>=3.8.10',
     include_package_data=True,
     install_requires=[
-        "requests>=2.27.1"
+        "requests>=2.27.1",
+        "iso4217>=1.8.20211001",
+        "ruamel.yaml>=0.17.21",
+        "validators>=0.18.2"
     ]
 )

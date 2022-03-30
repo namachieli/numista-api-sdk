@@ -1,0 +1,16 @@
+---
+# https://towardsdatascience.com/five-tips-for-automatic-python-documentation-7513825b760e
+sources_dir: docs
+templates_dir: docs/templates
+repo: https://github.com/namachieli/numista-api-sdk
+version: main
+pages:
+  - page: "Numista.md"
+    source: "numista/numista.py"
+    classes:
+      - Numista
+
+  - page: "static_functions.md"
+    source: "numista/numista.py"
+    functions:
+      - load_yaml

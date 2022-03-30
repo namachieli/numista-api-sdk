@@ -1,6 +1,3 @@
-# Code Coverage
-[![GitHub Super-Linter](https://github.com/namachieli/numista-api-sdk/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
-
 Pull Requests welcome!
 
 API Documentation: https://en.numista.com/api/doc/index.php

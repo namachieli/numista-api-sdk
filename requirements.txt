@@ -1,0 +1,4 @@
+requests>=2.27.1
+iso4217>=1.8.20211001
+ruamel.yaml>=0.17.21
+validators>=0.18.2
