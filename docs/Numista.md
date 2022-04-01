@@ -40,7 +40,6 @@ Initialize the Class
 ---
 Validates a grade.
 When grade is an empty string, returns a json string of valid grades
-# noqa: E501
 
 
 **Args**
@@ -109,7 +108,6 @@ Returns the user_id from token with with label: 'self'
 
 ---
 Returns the expiration from token with label: 'self'
-# noqa: E501
 
 
 **Args**
@@ -133,7 +131,6 @@ Returns the expiration from token with label: 'self'
 ---
 Return a schema by operationId
 Fetches schema if first call
-# noqa: E501
 
 
 **Args**
@@ -163,7 +160,6 @@ Fetches schema if first call
 
 ---
 Generate a body for an API http_method from the schema
-# noqa: E501
 
 
 **Args**
@@ -189,7 +185,6 @@ Generate a body for an API http_method from the schema
 
 ---
 Search the catalogue for coin, banknote and exonumia types
-# noqa: E501
 
 
 **Args**
@@ -221,7 +216,6 @@ This endpoint allows to add a coin to the catalogue.
 It requires a specific permission associated to your API key.
 After adding a coin, you are required to add at least one issue with
 `POST /types/{type_id}/issues` || `addIssue()`
-# noqa: E501
 
 
 **Args**
@@ -251,7 +245,6 @@ After adding a coin, you are required to add at least one issue with
 
 ---
 Find a type by ID
-# noqa: E501
 
 
 **Args**
@@ -281,7 +274,6 @@ Find a type by ID
 
 ---
 Find the issues of a type
-# noqa: E501
 
 
 **Args**
@@ -312,7 +304,6 @@ Find the issues of a type
 ---
 This endpoint allows to add coin issues to the catalogue.
 It requires a specific permission associated to your API key.
-# noqa: E501
 
 
 **Args**
@@ -344,7 +335,6 @@ It requires a specific permission associated to your API key.
 
 ---
 Get estimates for the price of an issue of a coin
-# noqa: E501
 
 
 **Args**
@@ -376,7 +366,6 @@ Get estimates for the price of an issue of a coin
 
 ---
 Retrieve the list of issuing countries and territories
-# noqa: E501
 
 
 **Args**
@@ -401,7 +390,6 @@ Retrieve the list of issuing countries and territories
 ---
 Retrieve the list of catalogues used for coin references
 Redirected from self.get_catalogs()
-# noqa: E501
 
 
 **Args**
@@ -424,7 +412,6 @@ Redirected from self.get_catalogs()
 
 ---
 Get information about a user
-# noqa: E501
 
 
 **Args**
@@ -452,7 +439,6 @@ No Longer Raises:
 
 ---
 Get the list of collections owned by a user
-# noqa: E501
 
 
 **Args**
@@ -484,7 +470,6 @@ Get the list of collections owned by a user
 
 ---
 Get the items (coins, banknotes, pieces of exonumia) owned by a user
-# noqa: E501
 
 
 **Args**
@@ -520,7 +505,6 @@ No Longer Raises:
 
 ---
 Add an item in the user collection
-# noqa: E501
 
 
 **Args**
@@ -552,7 +536,6 @@ Add an item in the user collection
 
 ---
 Get an item in a user's collection
-# noqa: E501
 
 
 **Args**
@@ -585,7 +568,6 @@ Get an item in a user's collection
 
 ---
 Edit an item in a user's collection
-# noqa: E501
 
 
 **Args**
@@ -618,7 +600,6 @@ Edit an item in a user's collection
 
 ---
 Delete an item from a user's collection
-# noqa: E501
 
 
 **Args**
