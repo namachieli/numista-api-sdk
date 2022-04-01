@@ -16,16 +16,16 @@ Attributes:
     VALID_API_USER_SCOPES (list): Valid user scopes supported by the API
     VALID_CATEGORY_TYPES (list): Valid categories supported by the API
     VALID_HTTP_METHODS (list): Valid HTTP methods supported by the API
-    VALID_NUMISTA_GRADES (TYPE): Valid grading labels supported by the API
-    VALID_OAUTH_GRANT_TYPES (TYPE): Valid permission grants supported by the API
+    VALID_NUMISTA_GRADES (list): Valid grading labels supported by the API
+    VALID_OAUTH_GRANT_TYPES (list): Valid permission grants supported by the API
 """
-import requests
+import json
 import logging
 import time
-import json
+
+import requests
 import ruamel.yaml
 import validators
-
 from iso4217 import Currency
 
 API_BASE_URL = "https://api.numista.com/api"
@@ -50,43 +50,19 @@ HTTP_STATUS_RESPONSE_MESSAGE = {
     401: "Invalid or missing API key, or insufficient permission",
     404: "The requested item not found, or you are not allowed to access it",
     429: "Quota exceeded",
-    501: "No user associated to your API key (for grant type 'client_credentials')"
+    501: "No user associated to your API key (for grant type 'client_credentials')",
 }
 
-VALID_HTTP_METHODS = [
-    "get",
-    "post",
-    "patch",
-    "delete"
-]
+VALID_HTTP_METHODS = ["get", "post", "patch", "delete"]
 
 # All values passed implicitely to _oauth() by _oauth_self()
-VALID_API_USER_SCOPES = [
-    "view_collection",
-    "edit_collection"
-]
+VALID_API_USER_SCOPES = ["view_collection", "edit_collection"]
 
-VALID_CATEGORY_TYPES = [
-    "",  # None = All
-    "coin",
-    "banknote",
-    "exunomia"
-]
+VALID_CATEGORY_TYPES = ["", "coin", "banknote", "exunomia"]  # None = All
 
-VALID_OAUTH_GRANT_TYPES = [
-    "authorization_code",
-    "client_credentials"
-]
+VALID_OAUTH_GRANT_TYPES = ["authorization_code", "client_credentials"]
 
-VALID_NUMISTA_GRADES = [
-    "g",
-    "vg",
-    "f",
-    "vf",
-    "xf",
-    "au",
-    "unc",
-]
+VALID_NUMISTA_GRADES = ["g", "vg", "f", "vf", "xf", "au", "unc"]
 
 
 def load_yaml(yaml_path=None) -> dict:
@@ -102,7 +78,7 @@ def load_yaml(yaml_path=None) -> dict:
         ValueError: When yaml_path is empty
     """
     if not yaml_path:
-        raise ValueError('a yaml file path was not provided, returning None')
+        raise ValueError("a yaml file path was not provided, returning None")
     yml = ruamel.yaml.YAML(typ="safe")
     url = True if validators.url(yaml_path) else False
     if url:
@@ -114,7 +90,7 @@ def load_yaml(yaml_path=None) -> dict:
     return {**parsed_yaml}
 
 
-class Numista():
+class Numista:
     """Initialize the Class
 
     Attributes:
@@ -125,12 +101,15 @@ class Numista():
         myTokenGenerate (method): Helper to a private method
         oauthTokens (dict): Dictionary containing all generated tokens by label
     """
-    def __init__(self,
-                 debug: bool = False,
-                 api_key: str = str(),
-                 api_ver: int = DEFAULT_API_VER,
-                 auto_self_token: bool = False,
-                 log_path: str = DEFAULT_LOG_PATH):
+
+    def __init__(
+        self,
+        debug: bool = False,
+        api_key: str = str(),
+        api_ver: int = DEFAULT_API_VER,
+        auto_self_token: bool = False,
+        log_path: str = DEFAULT_LOG_PATH,
+    ):
         """Initialize the Class
         # noqa: E501
 
@@ -149,8 +128,8 @@ class Numista():
         self._init_logger(path=log_path)
 
         self.inputs = dict()
-        self.inputs['api_key'] = api_key
-        self.inputs['api_ver'] = api_ver
+        self.inputs["api_key"] = api_key
+        self.inputs["api_ver"] = api_ver
 
         self._call_api = getattr(self, f"_api_v{self.inputs['api_ver']}", None)
 
@@ -161,7 +140,7 @@ class Numista():
         self.getCatalogs = getattr(self, "getCatalogues", None)
         self.myTokenGenerate = getattr(self, "_oauth_self", None)
 
-        if not self.inputs['api_key']:
+        if not self.inputs["api_key"]:
             msg = "api_key is required to access the numista API"
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
@@ -184,8 +163,7 @@ class Numista():
     # Helpers
     #
 
-    def _init_logger(self,
-                     path: str = str()) -> None:
+    def _init_logger(self, path: str = str()) -> None:
         """Initialize logic for the logger
         # noqa: E501
 
@@ -205,17 +183,18 @@ class Numista():
         if not path:
             path = DEFAULT_LOG_PATH
 
-        self.logger.basicConfig(filename=path,
-                                filemode='a',
-                                level=level,
-                                datefmt='%Y-%m-%dT%H:%M:%S%z',
-                                format='%(levelname)s:%(process)d:%(asctime)s:%(message)s')
-        self.logger.info('Logger initialized')
+        self.logger.basicConfig(
+            filename=path,
+            filemode="a",
+            level=level,
+            datefmt="%Y-%m-%dT%H:%M:%S%z",
+            format="%(levelname)s:%(process)d:%(asctime)s:%(message)s",
+        )
+        self.logger.info("Logger initialized")
 
-    def _except_and_log(self,
-                        ex_type=ValueError,
-                        ex_msg: str = "",
-                        log: str = "") -> None:
+    def _except_and_log(
+        self, ex_type=ValueError, ex_msg: str = "", log: str = ""
+    ) -> None:
         """Raises an exception based on the type provided in ex_type, and logs to file
         If 'log' provided, this string will be added after the log header, before the exception
         # noqa: E501
@@ -236,13 +215,15 @@ class Numista():
         except Exception:
             self.logger.exception(log)
 
-    def _api_client(self,
-                    v_path: str = str(),
-                    http_method: str = "get",
-                    endpoint_uri: str = DEFAULT_ENDPOINT_URI,
-                    body: dict = dict(),
-                    add_headers: dict = dict(),
-                    **kwargs) -> dict:
+    def _api_client(
+        self,
+        v_path: str = str(),
+        http_method: str = "get",
+        endpoint_uri: str = DEFAULT_ENDPOINT_URI,
+        body: dict = dict(),
+        add_headers: dict = dict(),
+        **kwargs,
+    ) -> dict:
         """Handles the raw send/recieve of data with the api
         kwargs are passed as params={} for requests
         # noqa: E501
@@ -275,13 +256,16 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
 
-        api_url = API_BASE_URL + v_path + endpoint_uri  # https://api.numista.com/api/v3/items
+        api_url = (
+            API_BASE_URL + v_path + endpoint_uri
+        )  # https://api.numista.com/api/v3/items
 
         if body:
             self.logger.debug(f"body: {body}")
 
+        # TODO: #11 | Add log filters to auto obfuscate
         headers = {
-            "Numista-API-Key": self.inputs['api_key'],  # TODO: #11 | Add log filters to auto obfuscate  # noqa: E501
+            "Numista-API-Key": self.inputs["api_key"],  # fmt: skip
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
@@ -291,10 +275,12 @@ class Numista():
 
         # TODO: #11 | Add log filters to auto obfuscate
         log_headers = {k: v for k, v in headers.items()}
-        log_headers['Numista-API-Key'] = f"***{log_headers['Numista-API-Key'][-4:]}"
+        log_headers["Numista-API-Key"] = f"***{log_headers['Numista-API-Key'][-4:]}"
 
         if log_headers.get("Authorization", None):
-            log_headers['Authorization'] = f"Bearer ***{log_headers['Authorization'][-4:]}"
+            # fmt: off
+            log_headers["Authorization"] = f"Bearer ***{log_headers['Authorization'][-4:]}"
+            # fmt: on
 
         # Remove null values, let API enforce defaults instead of sending garbage params.
         new_kwargs = {k: v for (k, v) in kwargs.items() if v}
@@ -320,7 +306,7 @@ class Numista():
 
         if self._debug and r:
             self.logger.debug("Storing raw request in _raw['last_request']")
-            self._raw['last_request'] = r
+            self._raw["last_request"] = r
 
         # TODO: #12 | This all can be done better I think
         if r.status_code in range(100, 599):
@@ -329,7 +315,9 @@ class Numista():
             except Exception as err:
                 if http_method != "delete":
                     # TODO: #12 | Find a better way to handle the response coming in from a delete.
-                    msg = "An exception was found when trying 'r.json()' in _api_client()"
+                    msg = (
+                        "An exception was found when trying 'r.json()' in _api_client()"
+                    )
                     self.logger.info(msg)
                     self._except_and_log(ex_msg=err, log=msg)
 
@@ -350,18 +338,23 @@ class Numista():
 
             self.logger.debug(f"API request succeeded, parsed data: {data}")
 
-            result = self._result_format(data=data,
-                                         http_status=r.status_code, requests=r)
+            result = self._result_format(
+                data=data, http_status=r.status_code, requests=r
+            )
+
         else:
             self.logger.debug("API request failed ungracefully")
             http_status = r.status_code if r.status_code else 0
-            result = self._result_format(data=data, failed=True,
-                                         http_status=http_status, requests=r)
+            result = self._result_format(
+                data=data,
+                failed=True,
+                http_status=http_status,
+                requests=r,
+            )
 
         return result
 
-    def _api_v3(self,
-                **kwargs) -> dict:
+    def _api_v3(self, **kwargs) -> dict:
         """SHIM: Any logic that is API Version 3 specific
         # noqa: E501
 
@@ -376,8 +369,7 @@ class Numista():
 
         return self._api_client(v_path=v, **kwargs)
 
-    def _api_v2(self,
-                **kwargs) -> dict:
+    def _api_v2(self, **kwargs) -> dict:
         """SHIM: Any logic that is API Version 2 specific
         # noqa: E501
 
@@ -392,11 +384,13 @@ class Numista():
 
         return self._api_client(v_path=v, **kwargs)
 
-    def _result_format(self,
-                       data: dict = dict(),
-                       http_status: int = 0,
-                       failed: bool = False,
-                       **kwargs) -> dict:
+    def _result_format(
+        self,
+        data: dict = dict(),
+        http_status: int = 0,
+        failed: bool = False,
+        **kwargs,
+    ) -> dict:
         """Format the result in a predictable and consistent way
         # noqa: E501
 
@@ -413,23 +407,25 @@ class Numista():
             "data": data,
             "http_info": {
                 "http_status": http_status,
-                "http_msg": HTTP_STATUS_RESPONSE_MESSAGE[http_status]
+                "http_msg": HTTP_STATUS_RESPONSE_MESSAGE[http_status],
             },
             "failed": failed,
-            "extra": kwargs
+            "extra": kwargs,
         }
         return result_format
 
-    def _oauth(self,
-               grant_type: str = str(),
-               code: str = str(),
-               client_id: str = str(),
-               client_secret: str = str(),
-               redirect_uri: str = str(),
-               scope: str = str(),
-               state: str = str(),
-               token_label: str = str(),
-               **kwargs) -> dict:
+    def _oauth(
+        self,
+        grant_type: str = str(),
+        code: str = str(),
+        client_id: str = str(),
+        client_secret: str = str(),
+        redirect_uri: str = str(),
+        scope: str = str(),
+        state: str = str(),
+        token_label: str = str(),
+        **kwargs,
+    ) -> dict:
         """Authenticate an API Key with OAuth
         # noqa: E501
 
@@ -465,22 +461,22 @@ class Numista():
             msg = None
 
             if code:
-                kwargs['code'] = code
+                kwargs["code"] = code
             else:
                 msg = f"code is when grant_type='authorization_code'. Got: {code}"
 
             if client_id:
-                kwargs['client_id'] = client_id
+                kwargs["client_id"] = client_id
             else:
                 msg = f"client_id is when grant_type='authorization_code'. Got: {client_id}"
 
             if client_secret:
-                kwargs['client_secret'] = client_secret
+                kwargs["client_secret"] = client_secret
             else:
                 msg = f"client_secret is when grant_type='authorization_code'. Got: {client_secret}"
 
             if redirect_uri:
-                kwargs['redirect_uri'] = redirect_uri
+                kwargs["redirect_uri"] = redirect_uri
             else:
                 msg = f"redirect_uri is when grant_type='authorization_code'. Got: {redirect_uri}"
 
@@ -492,37 +488,47 @@ class Numista():
         if not token_label:
             token_count = len(self.oauthTokens)
             token_label = f"{DEFAULT_TOKEN_LABEL}{token_count+1}"
-            self.logger.warn(f"token_label is required but none provided. Setting to {token_label}")
+            self.logger.warn(
+                f"token_label is required but none provided. Setting to {token_label}"
+            )
 
         # Make sure scope is valid
         self.logger.debug(f"Validating scope string comma seperated list: {scope}")
-        scopes = [s.strip() for s in scope.split(",") if s.strip() in VALID_API_USER_SCOPES]
+        scopes = [
+            s.strip() for s in scope.split(",") if s.strip() in VALID_API_USER_SCOPES
+        ]
 
         if not scopes:
-            self.logger.info(f"No valid scopes found in scope: {scope} setting to view_collection")
+            self.logger.info(
+                f"No valid scopes found in scope: {scope} setting to view_collection"
+            )
         else:
             self.logger.debug(f"valid scopes found: {scopes}")
 
-        kwargs['scope'] = ",".join(scopes) if scopes else "view_collection"
-        kwargs['state'] = state
-        kwargs['grant_type'] = grant_type
+        kwargs["scope"] = ",".join(scopes) if scopes else "view_collection"
+        kwargs["state"] = state
+        kwargs["grant_type"] = grant_type
 
         result = self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-        status = result['http_info']['http_status']
-        msg = result['http_info']['http_msg']
+        status = result["http_info"]["http_status"]
+        msg = result["http_info"]["http_msg"]
 
-        self.logger.debug(f"OAuth request finished with HTTP status {status} & msg: {msg}")
+        self.logger.debug(
+            f"OAuth request finished with HTTP status {status} & msg: {msg}"
+        )
 
         if status not in range(200, 299):
-            msg = f"A Non HTTP 2xx status was returned ({status}) when attempting to authorize " \
-                    "to OAuth. Please check logs for details. (Try Numista().debug=True)"
+            msg = (
+                f"A Non HTTP 2xx status was returned ({status}) when attempting to authorize "
+                "to OAuth. Please check logs for details. (Try Numista().debug=True)"
+            )
             self.logger.critical(msg)
             self._except_and_log(ex_msg=result.json())
             raise ValueError(msg)
 
         # Trim 1 second to ensure we assume exp before actual exp and to account for process delay
-        expires_in = result['data']['expires_in'] - 1
+        expires_in = result["data"]["expires_in"] - 1
         expires_at = int(time.time() + expires_in)
         expires_date = self._datetime_from_epoch(epoch=expires_at)
 
@@ -531,12 +537,12 @@ class Numista():
         # Format and store token
         token = {
             token_label: {
-                "token": result['data']['access_token'],
-                "user_id": result['data']['user_id'],
-                "type": result['data']['token_type'],
-                "scope": kwargs['scope'],
+                "token": result["data"]["access_token"],
+                "user_id": result["data"]["user_id"],
+                "type": result["data"]["token_type"],
+                "scope": kwargs["scope"],
                 "exp_epoch": expires_at,
-                "exp_date": expires_date
+                "exp_date": expires_date,
             }
         }
         self.oauthTokens.update(token)
@@ -544,9 +550,7 @@ class Numista():
 
         return self.oauthTokens[token_label]
 
-    def _oauth_self(self,
-                    scope: str = str(),
-                    **kwargs) -> dict:
+    def _oauth_self(self, scope: str = str(), **kwargs) -> dict:
         """Authenticate yourself for OAuth
         # noqa: E501
 
@@ -560,14 +564,14 @@ class Numista():
         self.logger.debug("Generating a token for our API Key")
         if not scope:
             scope = ", ".join(VALID_API_USER_SCOPES)
-            self.logger.debug(f"No scope provided for _oauth_self(), using defaults : {scope}")
+            self.logger.debug(
+                f"No scope provided for _oauth_self(), using defaults : {scope}"
+            )
 
         g_type = "client_credentials"
         return self._oauth(grant_type=g_type, scope=scope, token_label="self", **kwargs)
 
-    def _datetime_from_epoch(self,
-                             epoch: int = int(),
-                             fmt: str = None) -> str:
+    def _datetime_from_epoch(self, epoch: int = int(), fmt: str = None) -> str:
         """Convert an epoch time to datetime
         # noqa: E501
 
@@ -588,9 +592,9 @@ class Numista():
 
         return d
 
-    def _get_token_by_label(self,
-                            token_label: str = str(),
-                            no_self: bool = False) -> str:
+    def _get_token_by_label(
+        self, token_label: str = str(), no_self: bool = False
+    ) -> str:
         """Retrieves a token by it's label
         If no label supplied, attempted to fetch 'self', oauth if doesn't exist
         # noqa: E501
@@ -608,17 +612,23 @@ class Numista():
         # TODO: #13 | This can be written SO much better
         token = None
         if token_label:
-            self.logger.debug(f"Attempting to fetch bearer token with label: {token_label}")
+            self.logger.debug(
+                f"Attempting to fetch bearer token with label: {token_label}"
+            )
             token = self.oauthTokens.get(token_label, None)
             if token:
                 self.logger.debug(f"Token fetched successfully for {token_label}")
             else:
                 self.logger.info(f"No Token found for {token_label}")
         elif not token_label and no_self:
-            self.logger.info("A Token label must be supplied, or allow a self token to be returned")
+            self.logger.info(
+                "A Token label must be supplied, or allow a self token to be returned"
+            )
         else:
-            msg = "A bearer token for the user auth was not supplied, " \
-                  "attempting to load a token with label: 'self'"
+            msg = (
+                "A bearer token for the user auth was not supplied, "
+                "attempting to load a token with label: 'self'"
+            )
             self.logger.info(msg)
 
             my_token = None
@@ -644,8 +654,7 @@ class Numista():
         self.logger.debug("Token found")
         return token
 
-    def _validate_body(self,
-                       body: dict = dict()) -> bool:
+    def _validate_body(self, body: dict = dict()) -> bool:
         """Check if body is populated by something
         Enables consistent logging and reduction of code copypasta
         Can be expanded if parseable schema is added to this code in the future
@@ -668,9 +677,9 @@ class Numista():
 
         return result
 
-    def _validate_field_in(self,
-                           field: str = str(),
-                           in_iter: (list, set, tuple) = list()) -> str:
+    def _validate_field_in(
+        self, field: str = str(), in_iter: (list, set, tuple) = list()
+    ) -> str:
         """Accepts a field as a string, and checks if it is in the iterable (valid set)
         Returns the field if valid
         # noqa: E501
@@ -689,19 +698,21 @@ class Numista():
         if isinstance(in_iter, valid_iter_types):
             result = str(field) if field in in_iter else str()
         else:
-            msg = f"A non-iterable type ({type(in_iter)}) was provided to 'in_iter'. " \
-                  f"Valid types: {valid_iter_types}"
+            msg = (
+                f"A non-iterable type ({type(in_iter)}) was provided to 'in_iter'. "
+                f"Valid types: {valid_iter_types}"
+            )
             self.logger.warn(msg)
 
         return result
 
     def _fetch_api_schema(self) -> bool:
         """Fetch the schema defined in API_SCHEMA_URL
+        Stores result in Numista()._schemas
         """
         self._schemas = load_yaml(API_SCHEMA_URL)
 
-    def validateGrade(self,
-                      grade: str = str()) -> str:
+    def validateGrade(self, grade: str = str()) -> str:
         """Validates a grade.
         When grade is an empty string, returns a json string of valid grades
         # noqa: E501
@@ -717,7 +728,9 @@ class Numista():
             self.logger.debug(f"Validating Grade: {grade}")
             result = self._validate_field_in(field=grade, in_iter=VALID_NUMISTA_GRADES)
         else:
-            self.logger.info("No value for grade provided, returning json string of valid grades")
+            self.logger.info(
+                "No value for grade provided, returning json string of valid grades"
+            )
             result = json.dumps(VALID_NUMISTA_GRADES)
             self.logger.debug(f"Valid Grades: {result}")
 
@@ -735,7 +748,7 @@ class Numista():
             self.logger.debug("My Token hasn't been generated yet, generating now...")
             my_token = self.myTokenGenerate()
 
-        return my_token['token']
+        return my_token["token"]
 
     def myTokenRefresh(self) -> str:
         """destroys and regenerates 'self' token
@@ -744,7 +757,7 @@ class Numista():
             str: Returns your new token ('self')
         """
         self.logger.debug("Destroying existing token 'self'")
-        self.oauthTokens.pop('self')
+        self.oauthTokens.pop("self")
         return self.myToken()
 
     def myUserId(self) -> str:
@@ -756,12 +769,11 @@ class Numista():
         my_token = self.oauthTokens.get("self", None)
         if not my_token:
             self.logger.debug("My Token hasn't been generated yet, generating now...")
-            my_token = self.genMyToken()
+            my_token = self.myTokenGenerate()
 
-        return my_token['user_id']
+        return my_token["user_id"]
 
-    def myTokenExp(self,
-                   epoch: bool = False) -> str:
+    def myTokenExp(self, epoch: bool = False) -> str:
         """Returns the expiration from token with label: 'self'
         # noqa: E501
 
@@ -775,14 +787,13 @@ class Numista():
         my_token = self.oauthTokens.get("self", None)
         if not my_token:
             self.logger.debug("My Token hasn't been generated yet, generating now...")
-            my_token = self.genMyToken()
+            my_token = self.myTokenGenerate()
 
         return my_token[time_field]
 
-    def schemaFind(self,
-                   operationId: str = str(),
-                   http_method: str = "get",
-                   flat: bool = True) -> dict:
+    def schemaFind(
+        self, operationId: str = str(), http_method: str = "get", flat: bool = True
+    ) -> dict:
         """Return a schema by operationId
         Fetches schema if first call
         # noqa: E501
@@ -826,10 +837,10 @@ class Numista():
         # p_val = the dict of all the methods
         # m = the http_method (key)
         # m_val = the dict of all the http_method's k: v
-        paths = self._schemas['paths']
+        paths = self._schemas["paths"]
         for p, p_val in paths.items():
             for m, m_val in p_val.items():
-                if http_method == m and operationId == m_val['operationId']:
+                if http_method == m and operationId == m_val["operationId"]:
                     if flat:
                         result = {"http_method": m, "path": p, **m_val}
                     else:
@@ -841,10 +852,9 @@ class Numista():
         self.logger.debug(f"Result: {result}")
         return result
 
-    def schemaGenerateBody(self,
-                           operationId: str = str(),
-                           http_method: str = "post",
-                           example: bool = True) -> dict:
+    def schemaGenerateBody(
+        self, operationId: str = str(), http_method: str = "post", example: bool = True
+    ) -> dict:
         """Generate a body for an API http_method from the schema
         # noqa: E501
 
@@ -862,12 +872,16 @@ class Numista():
 
         if not example:
             example = True
-            self.logger.info("Non-Example responses have been disabled for now, Overriding...")
+            self.logger.info(
+                "Non-Example responses have been disabled for now, Overriding..."
+            )
 
         valid_methods = ["post", "patch"]
         if http_method not in valid_methods:
-            msg = f"The HTTP method: {http_method} you provided isn't one of {valid_methods}. " \
-                  "A body object is only needed for post or patch operations"
+            msg = (
+                f"The HTTP method: {http_method} you provided isn't one of {valid_methods}. "
+                "A body object is only needed for post or patch operations"
+            )
             self.logger.info(msg)
 
         if not operationId:
@@ -877,14 +891,18 @@ class Numista():
 
         result = dict()
 
-        schema = self.schemaFind(operationId=operationId, http_method=http_method, flat=True)
+        schema = self.schemaFind(
+            operationId=operationId, http_method=http_method, flat=True
+        )
 
         if not schema:
             msg = f"No schema found for operationId: {operationId} with http_method: {http_method}"
             self.logger.debug(msg)
         else:
             if example:
-                result = {**schema['requestBody']['content']['application/json']['example']}
+                result = {
+                    **schema["requestBody"]["content"]["application/json"]["example"]
+                }
             else:
                 pass
                 # Could actually parse schema... maybe later.
@@ -894,14 +912,16 @@ class Numista():
     # API Methods (Ordered by Documentation)
     #
 
-    def searchTypes(self,
-                    q: str = str(),
-                    issuer: str = str(),
-                    category: str = str(),
-                    page: int = 1,
-                    count: int = 50,
-                    lang: str = DEFAULT_LANG,
-                    **kwargs) -> dict:
+    def searchTypes(
+        self,
+        q: str = str(),
+        issuer: str = str(),
+        category: str = str(),
+        page: int = 1,
+        count: int = 50,
+        lang: str = DEFAULT_LANG,
+        **kwargs,
+    ) -> dict:
         """Search the catalogue for coin, banknote and exonumia types
         # noqa: E501
 
@@ -929,33 +949,32 @@ class Numista():
         self.logger.debug(f"KWARGS: {kwargs}")
 
         if not q:
-            msg = "You must provide a query string to the parameter: 'q'. Ex: q='Kopecks'"
+            msg = "You must provide a query to the parameter: 'q'. Ex: q='Kopecks'"
             print(msg)
             self._except_and_log(ex_msg=msg)
-            q = 'Kopecks'
+            q = "Kopecks"
         else:
-            kwargs['q'] = q
+            kwargs["q"] = q
 
         if category not in VALID_CATEGORY_TYPES:
-            msg = f"The Category provided ({category}) is not in the list of valid options: " \
-                  f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            msg = (
+                f"The Category provided ({category}) is not in the list of valid options: "
+                f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            )
             self.logger.warn(msg)
             self._except_and_log(ex_msg=msg)
-            kwargs['category'] = "coins"
+            kwargs["category"] = "coins"
         else:
-            kwargs['category'] = category
+            kwargs["category"] = category
 
-        kwargs['issuer'] = issuer
-        kwargs['lang'] = lang
-        kwargs['page'] = page
-        kwargs['count'] = count
+        kwargs["issuer"] = issuer
+        kwargs["lang"] = lang
+        kwargs["page"] = page
+        kwargs["count"] = count
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def addType(self,
-                lang: str = DEFAULT_LANG,
-                body: dict = dict(),
-                **kwargs) -> dict:
+    def addType(self, lang: str = DEFAULT_LANG, body: dict = dict(), **kwargs) -> dict:
         """This endpoint allows to add a coin to the catalogue.
         It requires a specific permission associated to your API key.
         After adding a coin, you are required to add at least one issue with
@@ -985,18 +1004,16 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
         else:
-            self.logger.info("The Numista API Requires you to also add at least 1 "
-                             "issue to this type.")
-            kwargs['body'] = body
+            self.logger.info(
+                "The Numista API Requires you to also add at least 1 issue to this type."
+            )
+            kwargs["body"] = body
 
-        kwargs['lang'] = lang
+        kwargs["lang"] = lang
 
         return self._call_api(http_method="post", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getType(self,
-                type_id: int = int(),
-                lang: str = DEFAULT_LANG,
-                **kwargs) -> dict:
+    def getType(self, type_id: int = int(), lang: str = DEFAULT_LANG, **kwargs) -> dict:
         """Find a type by ID
         # noqa: E501
 
@@ -1023,14 +1040,13 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
 
-        kwargs['lang'] = lang
+        kwargs["lang"] = lang
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getIssues(self,
-                  type_id: int = int(),
-                  lang: str = DEFAULT_LANG,
-                  **kwargs) -> dict:
+    def getIssues(
+        self, type_id: int = int(), lang: str = DEFAULT_LANG, **kwargs
+    ) -> dict:
         """Find the issues of a type
         # noqa: E501
 
@@ -1057,15 +1073,17 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
 
-        kwargs['lang'] = lang
+        kwargs["lang"] = lang
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def addIssue(self,
-                 type_id: int = int(),
-                 lang: str = DEFAULT_LANG,
-                 body: dict = dict(),
-                 **kwargs) -> dict:
+    def addIssue(
+        self,
+        type_id: int = int(),
+        lang: str = DEFAULT_LANG,
+        body: dict = dict(),
+        **kwargs,
+    ) -> dict:
         """This endpoint allows to add coin issues to the catalogue.
         It requires a specific permission associated to your API key.
         # noqa: E501
@@ -1100,18 +1118,20 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
         else:
-            kwargs['body'] = body
+            kwargs["body"] = body
 
-        kwargs['lang'] = lang
+        kwargs["lang"] = lang
 
         return self._call_api(http_method="post", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getPrices(self,
-                  type_id: int = int(),
-                  issue_id: int = int(),
-                  currency: str = DEFAULT_CURRENCY,
-                  lang: str = DEFAULT_LANG,
-                  **kwargs) -> dict:
+    def getPrices(
+        self,
+        type_id: int = int(),
+        issue_id: int = int(),
+        currency: str = DEFAULT_CURRENCY,
+        lang: str = DEFAULT_LANG,
+        **kwargs,
+    ) -> dict:
         """Get estimates for the price of an issue of a coin
         # noqa: E501
 
@@ -1149,16 +1169,16 @@ class Numista():
 
         # Munge string and check validity
         currency = currency.upper()
-        currency = currency if getattr(Currency, currency.lower(), None) else DEFAULT_CURRENCY
+        currency = (
+            currency if getattr(Currency, currency.lower(), None) else DEFAULT_CURRENCY
+        )
 
-        kwargs['lang'] = lang
-        kwargs['currency'] = currency
+        kwargs["lang"] = lang
+        kwargs["currency"] = currency
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getIssuers(self,
-                   lang: str = DEFAULT_LANG,
-                   **kwargs) -> dict:
+    def getIssuers(self, lang: str = DEFAULT_LANG, **kwargs) -> dict:
         """Retrieve the list of issuing countries and territories
         # noqa: E501
 
@@ -1177,8 +1197,7 @@ class Numista():
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getCatalogues(self,
-                      **kwargs) -> dict:
+    def getCatalogues(self, **kwargs) -> dict:
         """Retrieve the list of catalogues used for coin references
         Redirected from self.get_catalogs()
         # noqa: E501
@@ -1196,10 +1215,7 @@ class Numista():
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
-    def getUser(self,
-                user_id: int = int(),
-                lang: str = DEFAULT_LANG,
-                **kwargs) -> dict:
+    def getUser(self, user_id: int = int(), lang: str = DEFAULT_LANG, **kwargs) -> dict:
         """Get information about a user
         # noqa: E501
 
@@ -1226,7 +1242,7 @@ class Numista():
         self.logger.debug(f"Language: {lang}")
         self.logger.debug(f"KWARGS: {kwargs}")
 
-        kwargs['lang'] = lang
+        kwargs["lang"] = lang
 
         return self._call_api(http_method="get", endpoint_uri=endpoint_uri, **kwargs)
 
@@ -1234,11 +1250,13 @@ class Numista():
     # Endpoints requiring OAuth
     #
 
-    def getUserCollections(self,
-                           user_id: int = int(),
-                           category: str = str(),
-                           token_label: str = "self",
-                           **kwargs) -> dict:
+    def getUserCollections(
+        self,
+        user_id: int = int(),
+        category: str = str(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Get the list of collections owned by a user
         # noqa: E501
 
@@ -1268,39 +1286,47 @@ class Numista():
         self.logger.debug(f"KWARGS: {kwargs}")
 
         if category not in VALID_CATEGORY_TYPES:
-            msg = f"The Category provided ({category}) is not in the list of valid options: " \
-                  f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            msg = (
+                f"The Category provided ({category}) is not in the list of valid options: "
+                f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            )
             self.logger.warn(msg)
             self._except_and_log(ex_msg=msg)
-            kwargs['category'] = "coins"
+            kwargs["category"] = "coins"
         else:
-            kwargs['category'] = category
+            kwargs["category"] = category
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'getUserCollections()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'getUserCollections()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-        return self._call_api(http_method="get", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        return self._call_api(
+            http_method="get",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )
 
-    def getCollectedItems(self,
-                          user_id: int = int(),
-                          category: str = str(),
-                          type_id: int = int(),
-                          collection: int = int(),
-                          token_label: str = "self",
-                          **kwargs) -> dict:
+    def getCollectedItems(
+        self,
+        user_id: int = int(),
+        category: str = str(),
+        type_id: int = int(),
+        collection: int = int(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Get the items (coins, banknotes, pieces of exonumia) owned by a user
         # noqa: E501
 
@@ -1337,40 +1363,50 @@ class Numista():
         self.logger.debug(f"KWARGS: {kwargs}")
 
         if category not in VALID_CATEGORY_TYPES:
-            msg = f"The Category provided ({category}) is not in the list of valid options: " \
-                  f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            msg = (
+                f"The Category provided ({category}) is not in the list of valid options: "
+                f"({VALID_CATEGORY_TYPES}). Attempting with category: coins"
+            )
             self.logger.warn(msg)
             self._except_and_log(ex_msg=msg)
-            kwargs['category'] = "coins"
+            kwargs["category"] = "coins"
         else:
-            kwargs['category'] = category
+            kwargs["category"] = category
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'getUserItems()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'getUserItems()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        kwargs['type'] = type_id  # BUG: #5
-        kwargs['collection'] = collection
+        kwargs["type"] = type_id  # TODO: #5
+        kwargs["type"] = type
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        kwargs["collection"] = collection
 
-        return self._call_api(http_method="get", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-    def addCollectedItem(self,
-                         user_id: int = int(),
-                         body: dict = dict(),
-                         token_label: str = "self",
-                         **kwargs) -> dict:
+        return self._call_api(
+            http_method="get",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )
+
+    def addCollectedItem(
+        self,
+        user_id: int = int(),
+        body: dict = dict(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Add an item in the user collection
         # noqa: E501
 
@@ -1405,31 +1441,37 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
         else:
-            kwargs['body'] = body
+            kwargs["body"] = body
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'addCollectedItemss()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'addCollectedItemss()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-        return self._call_api(http_method="post", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        return self._call_api(
+            http_method="post",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )
 
-    def getCollectedItem(self,
-                         user_id: int = int(),
-                         item_id: int = int(),
-                         token_label: str = "self",
-                         **kwargs) -> dict:
+    def getCollectedItem(
+        self,
+        user_id: int = int(),
+        item_id: int = int(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Get an item in a user's collection
         # noqa: E501
 
@@ -1465,29 +1507,35 @@ class Numista():
             raise ValueError(msg)
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'getCollectedItem()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'getCollectedItem()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-        return self._call_api(http_method="get", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        return self._call_api(
+            http_method="get",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )
 
-    def editCollectedItem(self,
-                          user_id: int = int(),
-                          item_id: int = int(),
-                          body: dict = dict(),
-                          token_label: str = "self",
-                          **kwargs) -> dict:
+    def editCollectedItem(
+        self,
+        user_id: int = int(),
+        item_id: int = int(),
+        body: dict = dict(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Edit an item in a user's collection
         # noqa: E501
 
@@ -1529,31 +1577,37 @@ class Numista():
             self._except_and_log(ex_msg=msg)
             raise ValueError(msg)
         else:
-            kwargs['body'] = body
+            kwargs["body"] = body
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'editCollectedItem()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'editCollectedItem()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-        return self._call_api(http_method="patch", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        return self._call_api(
+            http_method="patch",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )
 
-    def deleteCollectedItem(self,
-                            user_id: int = int(),
-                            item_id: int = int(),
-                            token_label: str = "self",
-                            **kwargs) -> dict:
+    def deleteCollectedItem(
+        self,
+        user_id: int = int(),
+        item_id: int = int(),
+        token_label: str = "self",
+        **kwargs,
+    ) -> dict:
         """Delete an item from a user's collection
         # noqa: E501
 
@@ -1589,19 +1643,23 @@ class Numista():
             raise ValueError(msg)
 
         token_dict = self._get_token_by_label(token_label=token_label)
-        token = token_dict['token']
+        token = token_dict["token"]
 
         if not token:
             msg = "No token found"
             self.logger.critical(msg)
-            ex_msg = "A critical error was found when trying to get a collection with " \
-                     f"a token labeled: {token_label} in method 'deleteCollectedItem()'"
+            ex_msg = (
+                "A critical error was found when trying to get a collection with "
+                f"a token labeled: {token_label} in method 'deleteCollectedItem()'"
+            )
             self._except_and_log(ex_msg=ex_msg)
             raise LookupError(ex_msg)
 
-        add_headers = {
-            "Authorization": f"Bearer {token}"
-        }
+        add_headers = {"Authorization": f"Bearer {token}"}
 
-        return self._call_api(http_method="delete", endpoint_uri=endpoint_uri,
-                              add_headers=add_headers, **kwargs)
+        return self._call_api(
+            http_method="delete",
+            endpoint_uri=endpoint_uri,
+            add_headers=add_headers,
+            **kwargs,
+        )

@@ -1,3 +1,4 @@
+# yamllint disable rule:line-length
 ---
 # https://towardsdatascience.com/five-tips-for-automatic-python-documentation-7513825b760e
 sources_dir: docs
